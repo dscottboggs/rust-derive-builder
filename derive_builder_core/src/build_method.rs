@@ -96,16 +96,30 @@ impl<'a> ToTokens for BuildMethod<'a> {
 
         if self.enabled {
             let crate_root = &self.crate_root;
+            let (return_type, return_line) = if self.default_struct.is_some() {
+                (
+                    quote!(#target_ty #target_ty_generics),
+                    quote!(#target_ty { #(#initializers)* }),
+                )
+            } else {
+                (
+                    quote!(#crate_root::export::core::result::Result<#target_ty #target_ty_generics, #error_ty>),
+                    quote!(
+                        Ok(#target_ty {
+                            #(#initializers)*
+                        })
+                    ),
+                )
+            };
+
             tokens.append_all(quote!(
                 #doc_comment
                 #vis fn #ident(#self_param)
-                    -> #crate_root::export::core::result::Result<#target_ty #target_ty_generics, #error_ty>
+                    -> #return_type
                 {
                     #validate_fn
                     #default_struct
-                    Ok(#target_ty {
-                        #(#initializers)*
-                    })
+                    #return_line
                 }
             ))
         }
